@@ -61,7 +61,7 @@ beforeEach(function () {
 });
 
 describe("toProductDetailOutput", () => {
-  it("rút gọn ProductResponse, giữ dữ liệu trả lời được khách", function () {
+  it("rút gọn ProductResponse, giữ dữ liệu trả lời được khách + URL ảnh cho thử đồ", function () {
     expect(toProductDetailOutput(productDetailFixture())).toEqual({
       id: "p-123",
       name: "Áo Sơ Mi Lụa",
@@ -74,11 +74,14 @@ describe("toProductDetailOutput", () => {
       sizeGuide: null,
       averageRating: 4.5,
       reviewCount: 12,
+      defaultImageUrl: "img-1",
+      garmentUrl: null,
+      tryOnEnabled: false,
       variants: [{ size: "M", color: "Hồng", price: 450000, stockQuantity: 3 }],
     });
   });
 
-  it("bỏ field vô ích với model (ảnh, video, garment)", function () {
+  it("bỏ video vô ích với model, giữ URL ảnh mặc định + garment cho thử đồ", function () {
     const output = toProductDetailOutput({
       ...productDetailFixture(),
       images: [{ url: "img-1" }],
@@ -86,9 +89,31 @@ describe("toProductDetailOutput", () => {
       garmentUrl: "garment-1",
     });
 
-    expect(JSON.stringify(output)).not.toContain("img-1");
     expect(JSON.stringify(output)).not.toContain("video-1");
-    expect(JSON.stringify(output)).not.toContain("garment-1");
+    expect(output.defaultImageUrl).toBe("img-1");
+    expect(output.garmentUrl).toBe("garment-1");
+  });
+
+  it("defaultImageUrl là ảnh có sortOrder nhỏ nhất", function () {
+    const output = toProductDetailOutput({
+      ...productDetailFixture(),
+      images: [
+        { url: "img-second", sortOrder: 2 },
+        { url: "img-first", sortOrder: 0 },
+        { url: "img-third", sortOrder: 1 },
+      ],
+    });
+
+    expect(output.defaultImageUrl).toBe("img-first");
+  });
+
+  it("không có ảnh hợp lệ thì defaultImageUrl là null", function () {
+    expect(toProductDetailOutput({ ...productDetailFixture(), images: [] }).defaultImageUrl).toBe(
+      null,
+    );
+    expect(
+      toProductDetailOutput({ ...productDetailFixture(), images: [{ url: "" }] }).defaultImageUrl,
+    ).toBe(null);
   });
 });
 

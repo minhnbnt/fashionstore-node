@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { takeData } from "../../api/apiAdapters";
 
+import type { ImageResponse } from "../../../../generated/model/imageResponse";
 import type { ProductResponse } from "../../../../generated/model/productResponse";
 
 export const getProductDetailInputSchema = z.object({
@@ -20,7 +21,8 @@ export interface AgentProductDetailVariant {
   stockQuantity?: number;
 }
 
-/** ProductResponse rút gọn: bỏ ảnh, video, garment… vô ích với LLM. */
+/** ProductResponse rút gọn: giữ dữ liệu trả lời được khách + URL ảnh cho thử đồ ảo,
+ *  bỏ video, variant id/sku… vô ích với LLM. */
 export interface AgentProductDetailOutput {
   id?: string;
   name?: string;
@@ -33,10 +35,31 @@ export interface AgentProductDetailOutput {
   sizeGuide?: string | null;
   averageRating?: number | null;
   reviewCount?: number;
+  /** URL ảnh đại diện (sortOrder nhỏ nhất), null nếu sản phẩm chưa có ảnh. */
+  defaultImageUrl?: string | null;
+  /** URL public ảnh garment thử đồ ảo, null nếu backend chưa tạo. */
+  garmentUrl?: string | null;
+  /** Sản phẩm có hỗ trợ thử đồ ảo hay không. */
+  tryOnEnabled?: boolean;
   variants: AgentProductDetailVariant[];
 }
 
-/** ProductResponse → bản rút gọn cho model: giữ dữ liệu trả lời được khách, bỏ ảnh/video/garment. */
+/** Ảnh đại diện: url hợp lệ với sortOrder nhỏ nhất — API không trả sẵn trường này. */
+function defaultImageUrl(images: ImageResponse[]): string | null {
+  let best: ImageResponse | undefined;
+  for (const image of images) {
+    if (typeof image.url !== "string" || image.url === "") {
+      continue;
+    }
+    if (best === undefined || (image.sortOrder ?? 0) < (best.sortOrder ?? 0)) {
+      best = image;
+    }
+  }
+  return best?.url ?? null;
+}
+
+/** ProductResponse → bản rút gọn cho model: giữ dữ liệu trả lời được khách và URL ảnh thử đồ,
+ *  bỏ video và dữ liệu thừa. */
 export function toProductDetailOutput(payload: ProductResponse): AgentProductDetailOutput {
   return {
     id: payload.id,
@@ -50,6 +73,9 @@ export function toProductDetailOutput(payload: ProductResponse): AgentProductDet
     sizeGuide: payload.sizeGuide ?? null,
     averageRating: payload.averageRating ?? null,
     reviewCount: payload.reviewCount,
+    defaultImageUrl: defaultImageUrl(payload.images ?? []),
+    garmentUrl: payload.garmentUrl ?? null,
+    tryOnEnabled: payload.tryOnEnabled,
     variants: (payload.variants ?? []).map(function (variant) {
       return {
         size: variant.size,
