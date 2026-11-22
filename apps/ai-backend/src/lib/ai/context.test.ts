@@ -22,4 +22,28 @@ describe("agentRequestContextSchema", function () {
       agentRequestContextSchema.safeParse({ route: "/search", filters: { q: 1 } }).success,
     ).toBe(false);
   });
+
+  it("giữ lại ảnh đính kèm hợp lệ trong context", function () {
+    const parsed = agentRequestContextSchema.safeParse({
+      route: "/search",
+      filters: EMPTY_FILTERS,
+      image: { url: "https://assets.test/attached/abc.png", mediaType: "image/png" },
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.image).toEqual({
+        url: "https://assets.test/attached/abc.png",
+        mediaType: "image/png",
+      });
+    }
+  });
+
+  it("từ chối ảnh có url không hợp lệ", function () {
+    const parsed = agentRequestContextSchema.safeParse({
+      route: "/search",
+      filters: EMPTY_FILTERS,
+      image: { url: "not-a-url" },
+    });
+    expect(parsed.success).toBe(false);
+  });
 });

@@ -36,11 +36,18 @@ export const searchFiltersSchema = z.object({
   page: z.number(),
 });
 
+/** Ảnh khách đính kèm trong request hiện tại (url tuyệt đối đã upload). */
+export const agentImageSchema = z.object({
+  url: z.url(),
+  mediaType: z.string().optional(),
+});
+
 /** Context trang gửi tươi theo từng request, đã validate ở chatRoute. */
 export const agentRequestContextSchema = z.object({
   route: z.string(),
   filters: searchFiltersSchema,
   productId: z.string().optional(),
+  image: agentImageSchema.optional(),
 });
 
 export type AgentRequestContext = z.infer<typeof agentRequestContextSchema>;

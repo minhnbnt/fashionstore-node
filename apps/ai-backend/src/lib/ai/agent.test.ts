@@ -16,10 +16,16 @@ describe("buildSystemPrompt", function () {
     expect(prompt).toContain("showProducts");
     expect(prompt).toContain("3 sản phẩm");
   });
+
+  it("nhắc agent dùng readImage với link ảnh từ getPageContext", function () {
+    const prompt = buildSystemPrompt();
+    expect(prompt).toContain("readImage");
+    expect(prompt).toContain("getPageContext");
+  });
 });
 
 describe("createAgentTools", function () {
-  it("đăng ký đủ 5 tool", function () {
+  it("đăng ký đủ 6 tool", function () {
     const tools = createAgentTools({
       authorization: "Bearer t-1",
       context: { route: "/search", filters: EMPTY_FILTERS },
@@ -28,6 +34,7 @@ describe("createAgentTools", function () {
       "getPageContext",
       "getProductDetail",
       "listCategories",
+      "readImage",
       "searchProducts",
       "showProducts",
     ]);
