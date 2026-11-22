@@ -6,8 +6,11 @@ export default defineConfig({
   },
   pack: {
     entry: ["src/server.ts"],
-    deps: { alwaysBundle: [/.*/] },
-    external: [],
+    // sharp có native binary: không bundle vào JS, để runtime node_modules cung cấp.
+    deps: {
+      alwaysBundle: [/.*/],
+      neverBundle: [/^sharp$/, /^@img\//],
+    },
     minify: true,
     sourcemap: true,
     platform: "node",
