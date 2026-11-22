@@ -46,6 +46,9 @@ export function registerChatRoute(app: Express): void {
       name: "fashionstore-agent",
       baseURL: process.env.AI_BASE_URL ?? "",
       apiKey: process.env.AI_API_KEY ?? "",
+      // Bắt buộc để tool result dạng content (ảnh từ readImage) đi tới model
+      // như image_url thật thay vì bị JSON-stringify thành text.
+      supportsMultiPartToolContent: true,
     });
 
     const controller = new AbortController();

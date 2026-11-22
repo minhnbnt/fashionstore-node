@@ -34,7 +34,6 @@ RUN pnpm --filter native-runtime deploy --prod /native \
 
 FROM registry.access.redhat.com/hi/nodejs:26
 
-USER 0
 WORKDIR /app
 
 ENV NODE_ENV=production \
@@ -43,10 +42,10 @@ ENV NODE_ENV=production \
     GRPC_BIND_HOST=0.0.0.0 \
     GRPC_PORT=9091
 
-COPY --from=build /app/apps/embed-worker/dist ./dist
-COPY --from=build /native/node_modules ./node_modules
-COPY --from=build /models /models
-RUN chown -R 65532:0 /app /models
+# COPY --chown thay RUN chown -R: chown -R tạo layer chép lại /models (~350MB).
+COPY --from=build --chown=65532:0 /app/apps/embed-worker/dist ./dist
+COPY --from=build --chown=65532:0 /native/node_modules ./node_modules
+COPY --from=build --chown=65532:0 /models /models
 
 USER 65532
 EXPOSE 9091

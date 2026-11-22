@@ -1,6 +1,7 @@
 import { createGetPageContextTool } from "./tools/getPageContext";
 import { createGetProductDetailTool } from "./tools/getProductDetail";
 import { createListCategoriesTool } from "./tools/listCategories";
+import { createReadImageTool } from "./tools/readImage";
 import { createSearchProductsTool } from "./tools/searchProducts";
 import { createShowProductsTool } from "./tools/showProducts";
 
@@ -26,10 +27,11 @@ export function buildSystemPrompt(): string {
     "- Chưa biết slug danh mục thì gọi tool listCategories trước.",
     "- Mỗi lần tìm tối đa 8 ứng viên; khi gợi ý sản phẩm cho khách nên trả về 3 sản phẩm (nếu đủ). Nếu không có kết quả, gợi ý khách nới bớt bộ lọc.",
     "- Khi cần biết khách đang ở trang nào, bộ lọc nào, hoặc sản phẩm nào, gọi tool getPageContext. Không được giả định các giá trị này từ lịch sử hội thoại.",
+    "- Khi khách gửi kèm ảnh, lấy link ảnh từ getPageContext rồi gọi tool readImage để xem nội dung ảnh; không được đoán nội dung ảnh khi chưa gọi tool.",
   ].join("\n");
 }
 
-/** Năm tool của agent: 4 tool find/hiện sản phẩm + tool đọc context trang. */
+/** Sáu tool của agent: 4 tool find/hiện sản phẩm + tool đọc context + tool đọc ảnh. */
 export function createAgentTools(config: { authorization: string; context: AgentRequestContext }) {
   return {
     searchProducts: createSearchProductsTool({ authorization: config.authorization }),
@@ -37,6 +39,7 @@ export function createAgentTools(config: { authorization: string; context: Agent
     getProductDetail: createGetProductDetailTool({ authorization: config.authorization }),
     showProducts: createShowProductsTool({ authorization: config.authorization }),
     getPageContext: createGetPageContextTool({ context: config.context }),
+    readImage: createReadImageTool(),
   };
 }
 
