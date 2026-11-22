@@ -9,6 +9,7 @@ function executeOptions() {
 describe("showImageInputSchema", function () {
   it("chỉ nhận link http(s)", function () {
     expect(showImageInputSchema.safeParse({ url: "https://assets.test/a.png" }).success).toBe(true);
+    expect(showImageInputSchema.safeParse({ url: "http://localhost:3902/a.png" }).success).toBe(true);
     expect(showImageInputSchema.safeParse({ url: "ftp://assets.test/a.png" }).success).toBe(false);
   });
 });

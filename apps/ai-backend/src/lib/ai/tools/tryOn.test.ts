@@ -19,7 +19,7 @@ vi.mock("../../storage/s3", function () {
   };
 });
 
-import { createTryOnTool, TRYON_SPACE } from "./tryOn";
+import { createTryOnTool, tryOnInputSchema, TRYON_SPACE } from "./tryOn";
 
 function executeOptions() {
   return { toolCallId: "tc-test", messages: [] } as never;
@@ -69,6 +69,35 @@ function spaceApp(predictResult: { data: unknown }) {
   mockConnect.mockResolvedValue({ predict: mockPredict });
   mockPredict.mockResolvedValue(predictResult);
 }
+
+describe("tryOnInputSchema", function () {
+  it("nhận cả link http lẫn https để dev test qua MinIO/localhost", function () {
+    expect(
+      tryOnInputSchema.safeParse({
+        personImageUrl: "http://fashionstore.web.localhost:3902/uploads/x.png",
+        garmentImageUrl: "http://localhost:9000/fashionstore/garment.png",
+        category: "tops",
+        garmentPhotoType: "model",
+      }).success,
+    ).toBe(true);
+    expect(
+      tryOnInputSchema.safeParse({
+        personImageUrl: "https://assets.test/person.png",
+        garmentImageUrl: "https://assets.test/garment.png",
+        category: "tops",
+        garmentPhotoType: "model",
+      }).success,
+    ).toBe(true);
+    expect(
+      tryOnInputSchema.safeParse({
+        personImageUrl: "ftp://assets.test/person.png",
+        garmentImageUrl: "https://assets.test/garment.png",
+        category: "tops",
+        garmentPhotoType: "model",
+      }).success,
+    ).toBe(false);
+  });
+});
 
 describe("createTryOnTool", function () {
   it("fetch ảnh khách + garment, gọi Space /try_on rồi upload kết quả lên S3", async function () {
