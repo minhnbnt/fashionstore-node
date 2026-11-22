@@ -26,15 +26,14 @@ RUN --mount=type=cache,id=pnpm,target=/var/cache/pnpm \
 
 FROM registry.access.redhat.com/hi/nodejs:26
 
-USER 0
 WORKDIR /app
 
 ENV NODE_ENV=production \
     PORT=3000
 
-COPY --from=build /app/apps/ai-backend/dist ./dist
-COPY --from=build /native/node_modules ./node_modules
-RUN chown -R 65532:0 /app
+# COPY --chown thay RUN chown -R: tránh layer chép lại node_modules (~38MB).
+COPY --from=build --chown=65532:0 /app/apps/ai-backend/dist ./dist
+COPY --from=build --chown=65532:0 /native/node_modules ./node_modules
 
 USER 65532
 EXPOSE 3000
