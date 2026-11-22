@@ -3,7 +3,9 @@ import { createGetProductDetailTool } from "./tools/getProductDetail";
 import { createListCategoriesTool } from "./tools/listCategories";
 import { createReadImageTool } from "./tools/readImage";
 import { createSearchProductsTool } from "./tools/searchProducts";
+import { createShowImageTool } from "./tools/showImage";
 import { createShowProductsTool } from "./tools/showProducts";
+import { createTryOnTool } from "./tools/tryOn";
 
 import type { AgentRequestContext } from "./context";
 import type { InferUITools, UIDataTypes, UIMessage } from "ai";
@@ -28,10 +30,12 @@ export function buildSystemPrompt(): string {
     "- Mỗi lần tìm tối đa 8 ứng viên; khi gợi ý sản phẩm cho khách nên trả về 3 sản phẩm (nếu đủ). Nếu không có kết quả, gợi ý khách nới bớt bộ lọc.",
     "- Khi cần biết khách đang ở trang nào, bộ lọc nào, hoặc sản phẩm nào, gọi tool getPageContext. Không được giả định các giá trị này từ lịch sử hội thoại.",
     "- Khi khách gửi kèm ảnh, lấy link ảnh từ getPageContext rồi gọi tool readImage để xem nội dung ảnh; không được đoán nội dung ảnh khi chưa gọi tool.",
+    "- Khách muốn thử đồ thì gọi tool tryOn: personImageUrl là link ảnh khách đã đính kèm trong hội thoại (lấy từ getPageContext), garmentImageUrl là link ảnh garment của sản phẩm (lấy từ getProductDetail; sản phẩm tryOnEnabled=false thì không hỗ trợ thử đồ), category và garmentPhotoType mô tả sản phẩm. tryOn chỉ tạo và lưu ảnh, khách không thấy gì.",
+    "- Muốn hiện ảnh cho khách (kết quả tryOn hoặc ảnh khác có link) thì gọi tool showImage với link ảnh, không được bịa link.",
   ].join("\n");
 }
 
-/** Sáu tool của agent: 4 tool find/hiện sản phẩm + tool đọc context + tool đọc ảnh. */
+/** Tám tool của agent: 4 tool find/hiện sản phẩm + tool đọc context + 3 tool ảnh. */
 export function createAgentTools(config: { authorization: string; context: AgentRequestContext }) {
   return {
     searchProducts: createSearchProductsTool({ authorization: config.authorization }),
@@ -40,6 +44,8 @@ export function createAgentTools(config: { authorization: string; context: Agent
     showProducts: createShowProductsTool({ authorization: config.authorization }),
     getPageContext: createGetPageContextTool({ context: config.context }),
     readImage: createReadImageTool(),
+    tryOn: createTryOnTool(),
+    showImage: createShowImageTool(),
   };
 }
 

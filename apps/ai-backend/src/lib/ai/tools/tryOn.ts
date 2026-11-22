@@ -81,11 +81,11 @@ export function createTryOnTool() {
       const personBlob = await fetchBlob(
         input.personImageUrl,
         "Không tải được ảnh khách đính kèm, vui lòng thử lại sau.",
-      )
+      );
       const garmentBlob = await fetchBlob(
         input.garmentImageUrl,
         "Không tải được ảnh sản phẩm, vui lòng thử lại sau.",
-      )
+      );
 
       const { Client } = await import("@gradio/client");
       let resultUrl: string;
@@ -109,7 +109,7 @@ export function createTryOnTool() {
       const resultBlob = await fetchBlob(
         resultUrl,
         "Không tải được ảnh kết quả thử đồ, vui lòng thử lại sau.",
-      )
+      );
       const buffer = Buffer.from(await resultBlob.arrayBuffer());
       const uploaded = await uploadImage(buffer, resultBlob.type || "image/png");
       return { image: { key: uploaded.key, url: uploaded.url } };

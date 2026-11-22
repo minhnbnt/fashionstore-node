@@ -103,7 +103,10 @@ describe("createTryOnTool", function () {
   it("fetch ảnh khách + garment, gọi Space /try_on rồi upload kết quả lên S3", async function () {
     const mockFetch = stubFetch();
     spaceApp({ data: ["https://space.test/out.png"] });
-    mockUpload.mockResolvedValue({ key: "tryon/abc.png", url: "https://assets.test/tryon/abc.png" });
+    mockUpload.mockResolvedValue({
+      key: "tryon/abc.png",
+      url: "https://assets.test/tryon/abc.png",
+    });
     const tool = createTryOnTool();
 
     const result = await tool.execute(validInput(), executeOptions());
@@ -133,18 +136,25 @@ describe("createTryOnTool", function () {
     expect(predictInput.garment_image).toBeInstanceOf(Blob);
     expect(typeof predictInput.seed).toBe("number");
     expect(mockUpload).toHaveBeenCalledTimes(1);
-    expect(result).toEqual({ image: { key: "tryon/abc.png", url: "https://assets.test/tryon/abc.png" } });
+    expect(result).toEqual({
+      image: { key: "tryon/abc.png", url: "https://assets.test/tryon/abc.png" },
+    });
   });
 
   it("Space trả về object có url thì vẫn đọc được kết quả", async function () {
     stubFetch();
     spaceApp({ data: [{ url: "https://space.test/out.png" }] });
-    mockUpload.mockResolvedValue({ key: "tryon/abc.png", url: "https://assets.test/tryon/abc.png" });
+    mockUpload.mockResolvedValue({
+      key: "tryon/abc.png",
+      url: "https://assets.test/tryon/abc.png",
+    });
     const tool = createTryOnTool();
 
     const result = await tool.execute(validInput(), executeOptions());
 
-    expect(result).toEqual({ image: { key: "tryon/abc.png", url: "https://assets.test/tryon/abc.png" } });
+    expect(result).toEqual({
+      image: { key: "tryon/abc.png", url: "https://assets.test/tryon/abc.png" },
+    });
   });
 
   it("fetch ảnh khách thất bại thì báo lỗi đúng ngữ cảnh", async function () {
@@ -152,7 +162,10 @@ describe("createTryOnTool", function () {
     const tool = createTryOnTool();
 
     await expect(
-      tool.execute({ ...validInput(), personImageUrl: "https://assets.test/missing.png" }, executeOptions()),
+      tool.execute(
+        { ...validInput(), personImageUrl: "https://assets.test/missing.png" },
+        executeOptions(),
+      ),
     ).rejects.toThrow("Không tải được ảnh khách đính kèm");
     expect(mockConnect).not.toHaveBeenCalled();
   });
@@ -162,7 +175,10 @@ describe("createTryOnTool", function () {
     const tool = createTryOnTool();
 
     await expect(
-      tool.execute({ ...validInput(), garmentImageUrl: "https://assets.test/missing.png" }, executeOptions()),
+      tool.execute(
+        { ...validInput(), garmentImageUrl: "https://assets.test/missing.png" },
+        executeOptions(),
+      ),
     ).rejects.toThrow("Không tải được ảnh sản phẩm");
     expect(mockConnect).not.toHaveBeenCalled();
   });

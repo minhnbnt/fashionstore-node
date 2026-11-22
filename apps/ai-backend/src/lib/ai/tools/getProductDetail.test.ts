@@ -112,8 +112,7 @@ describe("toProductDetailOutput", () => {
       null,
     );
     expect(
-      toProductDetailOutput({ ...productDetailFixture(), images: [{ url: "" }] })
-        .defaultImageUrl,
+      toProductDetailOutput({ ...productDetailFixture(), images: [{ url: "" }] }).defaultImageUrl,
     ).toBe(null);
   });
 });

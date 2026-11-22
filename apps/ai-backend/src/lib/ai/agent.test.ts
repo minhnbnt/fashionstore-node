@@ -22,10 +22,18 @@ describe("buildSystemPrompt", function () {
     expect(prompt).toContain("readImage");
     expect(prompt).toContain("getPageContext");
   });
+
+  it("hướng dẫn flow thử đồ: tryOn tạo ảnh, showImage hiện ảnh", function () {
+    const prompt = buildSystemPrompt();
+    expect(prompt).toContain("tryOn");
+    expect(prompt).toContain("garmentImageUrl");
+    expect(prompt).toContain("showImage");
+    expect(prompt).toContain("khách không thấy");
+  });
 });
 
 describe("createAgentTools", function () {
-  it("đăng ký đủ 6 tool", function () {
+  it("đăng ký đủ 8 tool", function () {
     const tools = createAgentTools({
       authorization: "Bearer t-1",
       context: { route: "/search", filters: EMPTY_FILTERS },
@@ -36,7 +44,9 @@ describe("createAgentTools", function () {
       "listCategories",
       "readImage",
       "searchProducts",
+      "showImage",
       "showProducts",
+      "tryOn",
     ]);
   });
 });
