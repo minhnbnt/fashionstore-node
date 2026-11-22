@@ -61,4 +61,33 @@ describe("createReadImageTool", function () {
       tool.execute({ url: "https://assets.test/missing.png" }, executeOptions()),
     ).rejects.toThrow("Không tải được ảnh");
   });
+
+  it("toModelOutput biến output thành content có file part để model nhìn thấy ảnh", async function () {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(await imageResponse(400, 200)));
+    const tool = createReadImageTool();
+
+    const result = plainOutput(
+      await tool.execute({ url: "https://assets.test/small.png" }, executeOptions()),
+    );
+    const modelOutput = await Promise.resolve(
+      tool.toModelOutput?.({
+        toolCallId: "tc-test",
+        input: { url: "https://assets.test/small.png" },
+        output: result,
+      }),
+    );
+    expect(modelOutput).toBeDefined();
+    if (modelOutput === undefined || modelOutput.type !== "content") {
+      throw new Error("expected content output");
+    }
+    const filePart = modelOutput.value.find(function (part) {
+      return part.type === "file";
+    });
+    expect(filePart).toBeDefined();
+    expect(filePart?.mediaType).toBe("image/jpeg");
+    if (filePart === undefined || filePart.type !== "file") {
+      throw new Error("expected file part");
+    }
+    expect(filePart.data).toEqual({ type: "data", data: result.data });
+  });
 });

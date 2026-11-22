@@ -24,7 +24,8 @@ export interface ReadImageToolOutput {
   data: string;
 }
 
-/** Tool đọc ảnh: fetch link, thu nhỏ rồi trả base64 làm tool output cho model. */
+/** Tool đọc ảnh: fetch link, thu nhỏ rồi trả base64; toModelOutput biến thành
+ *  file part để model NHÌN THẤY ảnh (base64 dạng text thì model không đọc được). */
 export function createReadImageTool() {
   return tool({
     description:
@@ -56,6 +57,22 @@ export function createReadImageTool() {
         url,
         mediaType: "image/jpeg",
         data: resized.toString("base64"),
+      };
+    },
+    toModelOutput: function ({ output }) {
+      return {
+        type: "content",
+        value: [
+          {
+            type: "text",
+            text: `Ảnh khách đính kèm (${output.url}):`,
+          },
+          {
+            type: "file",
+            data: { type: "data", data: output.data },
+            mediaType: output.mediaType,
+          },
+        ],
       };
     },
   });

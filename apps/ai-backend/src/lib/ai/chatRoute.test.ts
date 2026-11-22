@@ -10,17 +10,23 @@ import { registerChatRoute } from "./chatRoute";
 
 import type { Express } from "express";
 
-const { holder, batchMock } = vi.hoisted(function () {
-  const result: { holder: { model: unknown }; batchMock: ReturnType<typeof vi.fn> } = {
+const { holder, batchMock, createProviderMock } = vi.hoisted(function () {
+  const result: {
+    holder: { model: unknown };
+    batchMock: ReturnType<typeof vi.fn>;
+    createProviderMock: (...args: unknown[]) => void;
+  } = {
     holder: { model: null },
     batchMock: vi.fn(),
+    createProviderMock: vi.fn(function (..._args: unknown[]) {}),
   };
   return result;
 });
 
 vi.mock("@ai-sdk/openai-compatible", function () {
   return {
-    createOpenAICompatible: function () {
+    createOpenAICompatible: function (...args: unknown[]) {
+      createProviderMock(...args);
       return function () {
         return holder.model;
       };
@@ -96,6 +102,35 @@ afterEach(function () {
 });
 
 describe("POST /api/chat", function () {
+  it("tạo provider với supportsMultiPartToolContent để ảnh trong tool result đi tới model", async function () {
+    holder.model = new MockLanguageModelV4({
+      doStream: async function () {
+        return {
+          stream: simulateReadableStream({
+            initialDelayInMs: 10,
+            chunks: [finishChunk("stop")],
+          }),
+        };
+      },
+    });
+
+    const { url, close } = await listen(makeApp());
+    try {
+      const response = await fetch(`${url}/api/chat`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messages: messagesFixture(), context: contextFixture() }),
+      });
+      expect(response.status).toBe(200);
+      await response.text();
+      expect(createProviderMock).toHaveBeenCalledWith(
+        expect.objectContaining({ supportsMultiPartToolContent: true }),
+      );
+    } finally {
+      await close();
+    }
+  });
+
   it("stream tool-showProducts + text cuối, gắn authorization của requester vào store API", async function () {
     let calls = 0;
     holder.model = new MockLanguageModelV4({
