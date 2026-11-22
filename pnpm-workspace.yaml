@@ -1,6 +1,6 @@
 packages:
-  - "."
-  - native-runtime
+  - apps/*
+  - apps/embed-worker/native-runtime
 
 # pnpm không export .npmrc thành npm_config_* cho lifecycle script, nên cờ
 # ONNXRUNTIME_NODE_INSTALL=skip không đặt qua .npmrc được. Cách pnpm-native:

@@ -1,41 +1,15 @@
 {
-  "name": "embed-worker-node",
+  "name": "fashionstore-node",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vpx --watch src/main.ts",
-    "build": "vp pack",
-    "test": "vp test run",
-    "check": "vp check",
-    "lint": "vp lint",
-    "lint:fix": "vp lint --fix",
-    "format": "vp fmt",
-    "format:check": "vp fmt --check",
-    "proto:gen": "pnpm exec buf generate",
-    "start": "node dist/main.mjs"
-  },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.1175.0",
-    "@grpc/grpc-js": "^1.14.7",
-    "@huggingface/transformers": "^4.3.2",
-    "onnxruntime-node": "1.30.0",
-    "pg": "^8.23.1",
-    "sharp": "^0.35.5",
-    "zod": "4.6.7"
-  },
-  "devDependencies": {
-    "@bufbuild/buf": "^1.75.0",
-    "@bufbuild/protobuf": "^2.17.0",
-    "@bufbuild/protoc-gen-es": "^2.17.0",
-    "@bufbuild/protoc-gen-grpc-es": "^0.0.1",
-    "@huggingface/hub": "^2.17.11",
-    "@types/node": "^26.6.6",
-    "@types/pg": "^8.15.5",
-    "jpeg-js": "^0.4.4",
-    "typescript": "~7.0.2",
-    "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "codegen": "pnpm --filter embed-worker-node proto:gen && pnpm --filter ai-backend codegen",
+    "check": "pnpm --filter embed-worker-node check && pnpm --filter ai-backend check",
+    "test": "pnpm --filter embed-worker-node test && pnpm --filter ai-backend test",
+    "build": "pnpm --filter embed-worker-node build && pnpm --filter ai-backend build",
+    "format": "pnpm --filter embed-worker-node format && pnpm --filter ai-backend format",
+    "format:check": "pnpm --filter embed-worker-node format:check && pnpm --filter ai-backend format:check"
   },
   "devEngines": {
     "packageManager": {

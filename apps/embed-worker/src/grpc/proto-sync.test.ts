@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
 
-const canonical = "../embed-worker/proto/fashion_clip/v1/embedding.proto";
+const canonical = "../../proto/fashion_clip/v1/embedding.proto";
 const copy = "src/grpc/proto/fashion_clip/v1/embedding.proto";
 
 function sha256(path: string): string {

@@ -1,59 +1,51 @@
-# Fashion Embed Worker (Node.js PoC)
+# Fashionstore Node services
 
-Port bản Python `../embed-worker` sang Node.js. Tiêu thụ pgmq `embed_jobs`, tải ảnh từ S3,
-tính Fashion-CLIP 512-dim bằng ONNX, ghi `product_embedding`, đồng thời serve gRPC
-`EmbedImage` + health cho backend Java trên `127.0.0.1:9091`.
+Monorepo pnpm chứa hai service Node của fashionstore. Mỗi app là một package riêng
+ngang hàng dưới `apps/`, dùng chung toolchain (vite-plus, TypeScript, pnpm 12.21.0).
+
+| App | Thư mục | Image | Cổng |
+| --- | --- | --- | --- |
+| Embedding worker | `apps/embed-worker` | `ghcr.io/minhnbnt/fashionstore-embed-worker` | gRPC 9091 |
+| AI backend | `apps/ai-backend` | `ghcr.io/minhnbnt/fashionstore-ai-backend` | HTTP 3000 |
 
 ## Chạy local
 
 ```bash
 pnpm install
-pnpm dev
-pnpm check && pnpm test
-pnpm build && pnpm start
+pnpm codegen          # buf generate + orval (generated/ không nằm trong git)
+pnpm check
+pnpm test
+pnpm build
+
+# chạy riêng từng app
+pnpm --filter embed-worker-node dev
+pnpm --filter ai-backend dev
 ```
 
-Env mặc định trong `.env.example`. Cần Postgres đã migrate tới `V46` và S3 endpoint.
-
-## Stub gRPC
-
-Proto được **lưu ngay trong repo** tại `src/grpc/proto/` (bản embedding copy từ canonical
-`../embed-worker/proto/...`, bản health do mình giữ). TS stub đã commit trong `src/grpc/gen/`.
-Sinh lại khi đổi proto:
-
-```bash
-pnpm proto:gen    # pnpm exec buf generate
-```
-
-Stub dùng `protoc-gen-es` (`erasable_syntax=true`) + `protoc-gen-grpc-es`, chạy trên
-`@grpc/grpc-js` nên Java backend không đổi. Test `proto-sync.test.ts` vẫn so hash proto local
-với bản canonical Python để phát hiện lệch; nếu lệch thì copy tay rồi chạy `pnpm proto:gen`.
-
-## Parity
-
-```bash
-RUN_PARITY=1 pnpm test src/infrastructure/model.parity.test.ts
-```
-
-Hai gate: model (cùng `pixel_values`) cosine ≥ 0.99999; end-to-end cosine ≥ 0.9975
-(decoder JPEG pure-JS khác libjpeg của Pillow — xem design doc §9).
+Mỗi app có `.env.example` riêng. Worker cần Postgres (migration V46) và S3; AI backend
+cần GoTrue, LLM OpenAI-compatible và `STORE_API_URL` của Java backend.
 
 ## Container
 
+Hai Dockerfile nằm trong thư mục từng app, nhưng **build context luôn là root repo**:
+
 ```bash
-podman build -t embed-worker-node .
-podman run --rm -p 9091:9091 \
-  -e DATABASE_URL=postgresql://postgres:postgres@postgres:5432/fashionstore \
-  -e S3_ENDPOINT_URL=http://s3:9000 \
-  embed-worker-node
+podman build -f apps/embed-worker/Dockerfile -t fashionstore-embed-worker .
+podman build -f apps/ai-backend/Dockerfile -t fashionstore-ai-backend .
 ```
 
-Image dùng `registry.access.redhat.com/hi/nodejs:26-builder` để build và
-`.../hi/nodejs:26` để chạy. Chỉ đóng gói gói native (`sharp`, `onnxruntime-node` CPU
-linux/x64, ~67 MB); phần JS nằm trong `dist/`. Weights ONNX được tải lúc build bằng
-`pnpm exec hfjs download` (`@huggingface/hub`, devDependency) theo SHA pin, chạy hoàn toàn
-offline với `LOCAL_FILES_ONLY=true`. Không có script tuỳ biến nào trong repo.
+Cả hai dùng base Red Hat `hi/nodejs:26-builder` / `hi/nodejs:26`. Worker chỉ đóng gói
+native binary CPU linux/x64 (~67 MB) + `dist/`; weights ONNX tải lúc build bằng
+`@huggingface/hub`. AI backend bundle toàn bộ dependency vào `dist/`.
 
-Khi chạy trong compose, đặt `GRPC_BIND_HOST=0.0.0.0` và cho backend Java dùng
-`EMBED_GRPC_ADDRESS=embed-worker:9091`. HEALTHCHECK gọi `dist/grpc-health.mjs` qua service
-`grpc.health.v1/Health.Check`.
+CI ở `.github/workflows/ci.yml` chạy check/test/build rồi build-push cả hai image lên
+GHCR khi push vào `master` (pull request thì chỉ build).
+
+## Proto
+
+Proto canonical nằm ở root `proto/fashion_clip/v1/embedding.proto`; bản copy dùng sinh
+stub nằm ở `apps/embed-worker/src/grpc/proto/`. Test so hash hai bản. Sinh lại stub:
+
+```bash
+pnpm --filter embed-worker-node proto:gen
+```

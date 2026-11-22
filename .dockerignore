@@ -1,8 +1,11 @@
 **/node_modules/
 **/dist/
+**/.env
+**/.cache/
+**/generated/
+**/*.log
+**/*.map
 .git/
-test-fixtures/
-docs/
-.env
-*.log
-*.map
+apps/embed-worker/docs/
+apps/embed-worker/test-fixtures/
+apps/ai-backend/docs/superpowers/

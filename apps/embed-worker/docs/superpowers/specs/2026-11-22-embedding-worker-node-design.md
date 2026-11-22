@@ -35,6 +35,11 @@ cắt traffic production, scale ngang, quantized model, text embedding, HTTP API
 - Đổi proto khiến `ProtoSyncTest` bên Java đỏ.
 - Giữ Python inference ẩn bên trong ("full Node" mà thực ra không phải).
 
+> **Cập nhật monorepo:** source worker đã dời vào `apps/embed-worker/` của repo
+> `fashionstore-node`, ngang hàng với `apps/ai-backend`. Các đường dẫn tương đối cũ trong
+> document này (ví dụ `../embed-worker/proto/...`) giờ là `../../proto/...` tính từ root app.
+> Proto canonical nằm ở root monorepo `proto/fashion_clip/v1/embedding.proto`.
+
 ## 3. Ràng buộc và nền tảng hiện có
 
 - Node 26.13.1, pnpm 12.22.0. Dùng vite-plus 1.7.0 theo mẫu `ai-backend`

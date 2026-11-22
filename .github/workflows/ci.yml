@@ -25,6 +25,7 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+      - run: pnpm codegen
       - run: pnpm check
       - run: pnpm test
       - run: pnpm build
@@ -37,11 +38,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push container image
+      - name: Build and push embed-worker image
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: apps/embed-worker/Dockerfile
           push: ${{ github.event_name == 'push' }}
           tags: |
             ghcr.io/minhnbnt/fashionstore-embed-worker:latest
             ghcr.io/minhnbnt/fashionstore-embed-worker:${{ github.sha }}
+
+      - name: Build and push ai-backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/ai-backend/Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ghcr.io/minhnbnt/fashionstore-ai-backend:latest
+            ghcr.io/minhnbnt/fashionstore-ai-backend:${{ github.sha }}
