@@ -15,6 +15,12 @@ RUN pnpm install --frozen-lockfile --filter ai-backend...
 COPY . .
 RUN pnpm --filter ai-backend build
 
+# sharp tải native binding theo platform qua @img/* (pnpm dùng symlink tới store).
+# Dereference symlink rồi copy sang runtime vì ảnh bundle chỉ require("@img/.../*.node"),
+# trong khi runtime image không có node_modules.
+RUN mkdir -p /app/native/@img \
+    && cp -aL /app/node_modules/.pnpm/node_modules/@img/. /app/native/@img/
+
 FROM registry.access.redhat.com/hi/nodejs:26
 
 USER 0
@@ -24,6 +30,7 @@ ENV NODE_ENV=production \
     PORT=3000
 
 COPY --from=build /app/apps/ai-backend/dist ./dist
+COPY --from=build /app/native/@img ./node_modules/@img
 RUN chown -R 65532:0 /app
 
 USER 65532
