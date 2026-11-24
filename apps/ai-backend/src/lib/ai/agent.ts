@@ -30,7 +30,7 @@ export function buildSystemPrompt(): string {
     "- Mỗi lần tìm tối đa 8 ứng viên; khi gợi ý sản phẩm cho khách nên trả về 3 sản phẩm (nếu đủ). Nếu không có kết quả, gợi ý khách nới bớt bộ lọc.",
     "- Khi cần biết khách đang ở trang nào, bộ lọc nào, hoặc sản phẩm nào, gọi tool getPageContext. Không được giả định các giá trị này từ lịch sử hội thoại.",
     "- Khi khách gửi kèm ảnh, lấy link ảnh từ getPageContext rồi gọi tool readImage để xem nội dung ảnh; không được đoán nội dung ảnh khi chưa gọi tool.",
-    "- Khách muốn thử đồ thì gọi tool tryOn: personImageUrl là link ảnh khách đã đính kèm trong hội thoại (lấy từ getPageContext), garmentImageUrl là link ảnh trang phục — ưu tiên garmentUrl của sản phẩm lấy từ getProductDetail, còn nếu khách cung cấp link ảnh trang phục khác (dán link hoặc đính kèm) thì dùng link đó. Chưa đoán được category/garmentPhotoType của ảnh trang phục thì gọi readImage xem ảnh trước. tryOn chỉ tạo và lưu ảnh, khách không thấy gì.",
+    "- Khách muốn thử đồ thì gọi tool tryOn: personImageUrl là link ảnh khách đã đính kèm trong hội thoại (lấy từ getPageContext), garmentImageUrl là link ảnh trang phục — ưu tiên garmentUrl của sản phẩm lấy từ getProductDetail, còn nếu khách cung cấp link ảnh trang phục khác (dán link hoặc đính kèm) thì dùng link đó, và mode chọn loại trang phục cần thử (top: chỉ đổi áo, bottom: chỉ đổi quần, full: đổi cả bộ/váy/đầm). Nếu chưa chắc loại trang phục để chọn mode thì gọi readImage xem ảnh trước. tryOn chỉ tạo và lưu ảnh, khách không thấy gì.",
     "- Muốn hiện ảnh cho khách (kết quả tryOn hoặc ảnh khác có link) thì gọi tool showImage với link ảnh, không được bịa link.",
   ].join("\n");
 }

@@ -3,9 +3,30 @@ import { z } from "zod";
 
 import { uploadImage } from "../../storage/s3";
 
-export const TRYON_SPACE = "fashn-ai/fashn-vton-1.5";
+export const DEFAULT_VTON_API_URL = "http://localhost:8001";
 
 const FAILED_MESSAGE = "Tạo ảnh thử đồ thất bại, vui lòng thử lại sau.";
+
+const MIME_TO_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
+
+function resolveVtonApiUrl(): string {
+  const configured = process.env.VTON_API_URL?.trim();
+  if (configured) {
+    return configured;
+  }
+  return DEFAULT_VTON_API_URL;
+}
+
+function blobToImageFile(blob: Blob, baseName: string): File {
+  const mime = blob.type || "image/png";
+  const normalizedMime = mime.split(";")[0].trim().toLowerCase();
+  const ext = MIME_TO_EXT[normalizedMime] ?? "png";
+  return new File([blob], `${baseName}.${ext}`, { type: mime });
+}
 
 function httpImage(message: string) {
   return z
@@ -22,12 +43,11 @@ function httpImage(message: string) {
 export const tryOnInputSchema = z.object({
   personImageUrl: httpImage("Link ảnh khách đính kèm, lấy từ ngữ cảnh hệ thống"),
   garmentImageUrl: httpImage(
-    "Link ảnh garment thử đồ của sản phẩm, lấy từ getProductDetail (garmentImageUrl)",
+    "Link ảnh garment thử đồ của sản phẩm, lấy từ getProductDetail (garmentUrl) hoặc ảnh trang phục khách cung cấp",
   ),
-  category: z.enum(["tops", "bottoms", "one-pieces"]).describe("Loại trang phục của sản phẩm"),
-  garmentPhotoType: z
-    .enum(["model", "flat-lay"])
-    .describe("Kiểu ảnh sản phẩm: người mẫu mặc (model) hay ảnh trải phẳng (flat-lay)"),
+  mode: z
+    .enum(["top", "bottom", "full"])
+    .describe("Chế độ thử đồ: top = chỉ đổi áo, bottom = chỉ đổi quần, full = đổi cả bộ"),
 });
 
 export type TryOnToolInput = z.infer<typeof tryOnInputSchema>;
@@ -39,20 +59,42 @@ export interface TryOnToolOutput {
   };
 }
 
-/** Kết quả Space trả về dạng dữ liệu lạ, hoặc thiếu url thì coi như tạo ảnh thất bại. */
+function extractUrlFromItem(item: unknown): string | null {
+  if (typeof item === "string") {
+    if (item !== "") {
+      return item;
+    }
+    return null;
+  }
+  if (item === null || typeof item !== "object") {
+    return null;
+  }
+  const record = item as { url?: unknown; image?: unknown };
+  if (typeof record.url === "string" && record.url !== "") {
+    return record.url;
+  }
+  if (record.image !== null && typeof record.image === "object") {
+    const imageUrl = (record.image as { url?: unknown }).url;
+    if (typeof imageUrl === "string" && imageUrl !== "") {
+      return imageUrl;
+    }
+  }
+  return null;
+}
+
+/** Kết quả Gradio trả về dạng dữ liệu lạ, hoặc thiếu url thì coi như tạo ảnh thất bại. */
 function extractResultUrl(data: unknown): string {
-  if (Array.isArray(data) === false) {
+  if (Array.isArray(data) === false || data.length === 0) {
     throw new Error(FAILED_MESSAGE);
   }
   const first = (data as unknown[])[0];
-  if (typeof first === "string" && first !== "") {
-    return first;
+  let candidate: unknown = first;
+  if (Array.isArray(first)) {
+    candidate = first[0];
   }
-  if (first !== null && typeof first === "object") {
-    const url = (first as { url?: unknown }).url;
-    if (typeof url === "string" && url !== "") {
-      return url;
-    }
+  const url = extractUrlFromItem(candidate);
+  if (url !== null) {
+    return url;
   }
   throw new Error(FAILED_MESSAGE);
 }
@@ -70,12 +112,12 @@ async function fetchBlob(url: string, failureMessage: string): Promise<Blob> {
   return response.blob();
 }
 
-/** Tool tạo ảnh thử đồ ảo qua Space fashn-ai/fashn-vton-1.5: chỉ xử lý và lưu ảnh lên S3,
+/** Tool tạo ảnh thử đồ ảo qua server vton-ai local (Gradio API): chỉ xử lý và lưu ảnh lên S3,
  *  khách không thấy gì — muốn hiện kết quả thì model gọi tiếp showImage. */
 export function createTryOnTool() {
   return tool({
     description:
-      "Tạo ảnh thử đồ ảo: khớp ảnh khách đính kèm với ảnh sản phẩm trong cửa hàng. Tool chỉ tạo và lưu ảnh, khách không thấy gì; sau khi tạo xong cần gọi showImage để hiện ảnh kết quả cho khách.",
+      "Tạo ảnh thử đồ ảo qua vton-ai: khớp ảnh khách đính kèm với ảnh trang phục theo chế độ top/bottom/full. Tool chỉ tạo và lưu ảnh, khách không thấy gì; sau khi tạo xong cần gọi showImage để hiện ảnh kết quả cho khách.",
     inputSchema: tryOnInputSchema,
     execute: async function (input): Promise<TryOnToolOutput> {
       const personBlob = await fetchBlob(
@@ -87,19 +129,16 @@ export function createTryOnTool() {
         "Không tải được ảnh sản phẩm, vui lòng thử lại sau.",
       );
 
+      const personFile = blobToImageFile(personBlob, "person");
+      const garmentFile = blobToImageFile(garmentBlob, "garment");
+
       const { Client } = await import("@gradio/client");
       let resultUrl: string;
       try {
-        const app = await Client.connect(TRYON_SPACE);
-        const result = await app.predict("/try_on", {
-          person_image: personBlob,
-          garment_image: garmentBlob,
-          category: input.category,
-          garment_photo_type: input.garmentPhotoType,
-          num_timesteps: 50,
-          guidance_scale: 1.5,
-          segmentation_free: true,
-          seed: Math.floor(Math.random() * 2147483647),
+        const app = await Client.connect(resolveVtonApiUrl());
+        const result = await app.predict("/process_images", {
+          images: [personFile, garmentFile],
+          mode: input.mode,
         });
         resultUrl = extractResultUrl(result.data);
       } catch {
