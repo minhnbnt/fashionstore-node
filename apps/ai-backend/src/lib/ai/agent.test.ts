@@ -29,6 +29,12 @@ describe("buildSystemPrompt", function () {
     expect(prompt).toContain("garmentImageUrl");
     expect(prompt).toContain("showImage");
     expect(prompt).toContain("khách không thấy");
+    expect(prompt).toContain("mode");
+    expect(prompt).toContain("top");
+    expect(prompt).toContain("bottom");
+    expect(prompt).toContain("full");
+    expect(prompt).not.toContain("garmentPhotoType");
+    expect(prompt).not.toContain("category/garmentPhotoType");
   });
 });
 
