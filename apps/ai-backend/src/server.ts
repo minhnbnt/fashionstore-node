@@ -38,7 +38,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ message: "internal server error" });
 });
 
-const port = Number(process.env.PORT) || 3000;
+const port = Number(process.env.PORT) || 3001;
 
 app.listen(port, () => {
   console.log(`ai-backend listening on http://localhost:${port}`);
