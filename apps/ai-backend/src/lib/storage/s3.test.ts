@@ -39,7 +39,7 @@ describe("uploadImage", function () {
     expect(typeof command.input.Key).toBe("string");
     expect(String(command.input.Key)).toMatch(/^tryon\/[0-9a-f-]{36}\.png$/);
     expect(result.key).toBe(command.input.Key);
-    expect(result.url).toBe(`http://fashionstore.web.localhost:3902/${result.key}`);
+    expect(result.url).toBe(`http://localhost:9000/fashionstore/${result.key}`);
   });
 
   it("mỗi lần upload tạo key riêng", async function () {

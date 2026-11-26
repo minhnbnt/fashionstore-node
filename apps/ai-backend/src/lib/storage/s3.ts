@@ -7,7 +7,7 @@ const BUCKET = process.env.S3_BUCKET ?? "fashionstore";
 const ACCESS_KEY = process.env.S3_ACCESS_KEY ?? "fashionstore";
 const SECRET_KEY = process.env.S3_SECRET_KEY ?? "passwordpassword";
 const REGION = process.env.S3_REGION ?? "us-east-1";
-const ASSETS_URL = process.env.ASSETS_URL ?? "http://fashionstore.web.localhost:3902";
+const ASSETS_URL = process.env.ASSETS_URL ?? "http://localhost:9000/fashionstore";
 
 const client = new S3Client({
   endpoint: ENDPOINT,
