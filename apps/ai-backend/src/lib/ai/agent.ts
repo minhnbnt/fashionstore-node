@@ -44,7 +44,7 @@ export function createAgentTools(config: { authorization: string; context: Agent
     showProducts: createShowProductsTool({ authorization: config.authorization }),
     getPageContext: createGetPageContextTool({ context: config.context }),
     readImage: createReadImageTool(),
-    tryOn: createTryOnTool(),
+    tryOn: createTryOnTool({ authorization: config.authorization }),
     showImage: createShowImageTool(),
   };
 }

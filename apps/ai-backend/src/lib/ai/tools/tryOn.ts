@@ -99,10 +99,18 @@ function extractResultUrl(data: unknown): string {
   throw new Error(FAILED_MESSAGE);
 }
 
-async function fetchBlob(url: string, failureMessage: string): Promise<Blob> {
+async function fetchBlob(
+  url: string,
+  failureMessage: string,
+  headers?: Record<string, string>,
+): Promise<Blob> {
   let response: Response;
   try {
-    response = await fetch(url);
+    if (headers !== undefined) {
+      response = await fetch(url, { headers });
+    } else {
+      response = await fetch(url);
+    }
   } catch {
     throw new Error(failureMessage);
   }
@@ -114,7 +122,7 @@ async function fetchBlob(url: string, failureMessage: string): Promise<Blob> {
 
 /** Tool tạo ảnh thử đồ ảo qua server vton-ai local (Gradio API): chỉ xử lý và lưu ảnh lên S3,
  *  khách không thấy gì — muốn hiện kết quả thì model gọi tiếp showImage. */
-export function createTryOnTool() {
+export function createTryOnTool(config?: { authorization?: string }) {
   return tool({
     description:
       "Tạo ảnh thử đồ ảo qua vton-ai: khớp ảnh khách đính kèm với ảnh trang phục theo chế độ top/bottom/full. Tool chỉ tạo và lưu ảnh, khách không thấy gì; sau khi tạo xong cần gọi showImage để hiện ảnh kết quả cho khách.",
@@ -132,10 +140,20 @@ export function createTryOnTool() {
       const personFile = blobToImageFile(personBlob, "person");
       const garmentFile = blobToImageFile(garmentBlob, "garment");
 
+      let authHeaders: Record<string, string> | undefined;
+      if (config?.authorization !== undefined && config.authorization !== "") {
+        authHeaders = { Authorization: config.authorization };
+      }
+
       const { Client } = await import("@gradio/client");
       let resultUrl: string;
       try {
-        const app = await Client.connect(resolveVtonApiUrl());
+        let app: Awaited<ReturnType<typeof Client.connect>>;
+        if (authHeaders !== undefined) {
+          app = await Client.connect(resolveVtonApiUrl(), { headers: authHeaders });
+        } else {
+          app = await Client.connect(resolveVtonApiUrl());
+        }
         const result = await app.predict("/process_images", {
           images: [personFile, garmentFile],
           mode: input.mode,
@@ -148,6 +166,7 @@ export function createTryOnTool() {
       const resultBlob = await fetchBlob(
         resultUrl,
         "Không tải được ảnh kết quả thử đồ, vui lòng thử lại sau.",
+        authHeaders,
       );
       const buffer = Buffer.from(await resultBlob.arrayBuffer());
       const uploaded = await uploadImage(buffer, resultBlob.type || "image/png");

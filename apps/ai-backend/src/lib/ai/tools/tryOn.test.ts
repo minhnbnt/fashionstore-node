@@ -363,4 +363,25 @@ describe("createTryOnTool", function () {
     );
     expect(mockUpload).not.toHaveBeenCalled();
   });
+
+  it("đính kèm header Authorization vào Client.connect và khi tải ảnh kết quả từ vton-ai nếu được cấu hình", async function () {
+    const mockFetch = stubFetch();
+    vtonApp({
+      data: [[{ image: { url: "http://localhost:8001/file=out.png" }, caption: null }]],
+    });
+    mockUpload.mockResolvedValue({
+      key: "tryon/abc.png",
+      url: "https://assets.test/tryon/abc.png",
+    });
+    const tool = createTryOnTool({ authorization: "Bearer user-jwt-token" });
+
+    await tool.execute(validInput(), executeOptions());
+
+    expect(mockConnect).toHaveBeenCalledWith("http://localhost:8001", {
+      headers: { Authorization: "Bearer user-jwt-token" },
+    });
+    expect(mockFetch).toHaveBeenLastCalledWith("http://localhost:8001/file=out.png", {
+      headers: { Authorization: "Bearer user-jwt-token" },
+    });
+  });
 });
